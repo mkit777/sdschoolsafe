@@ -1,10 +1,13 @@
+from enum import EnumMeta
 from bs4 import BeautifulSoup
 import re
 
 
 class Question:
   def __init__(self) -> None:
+    self.block = None
     self.no = None
+    self.block_no = None
     self.question = None
     self.q = None
     self.type = None
@@ -17,17 +20,14 @@ class Question:
       return self.__str__()
 
 
-def extract_questions(path):
-  with open(path, encoding='utf-8') as f:
-    soup = BeautifulSoup(f, features='html.parser')
-  
+def do_extract_questions(content):
+  soup = BeautifulSoup(content, features='html.parser')
   questions = []
-
   blocks = soup.select('.title-contain')
-  for block in blocks:
+  for (block_idx, block) in enumerate(blocks):
     type = block.select_one('.title.exam-qustion-content').getText().strip()
     questions_doc = block.select('.question-contain')
-    for question_doc in questions_doc:
+    for (b_no, question_doc) in enumerate(questions_doc):
       question_title = question_doc.select_one('.exam-qustion-content').get_text()
       parted = re.split('\s+', question_title)
       # 序号
@@ -36,6 +36,8 @@ def extract_questions(path):
       title = ''.join(parted[1:])
 
       q = Question()
+      q.block = block_idx
+      q.block_no = b_no
       q.no = no
       q.question = title
       q.type = type
@@ -60,6 +62,12 @@ def extract_questions(path):
       
       questions.append(q)
   return questions
+
+
+
+def extract_questions(path):
+  with open(path, encoding='utf-8') as f:
+    return do_extract_questions(f)
 
 
 if __name__ == '__main__':
