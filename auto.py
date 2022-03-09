@@ -37,6 +37,8 @@ async def main(opts: Opts):
 
   browser = await launch(devtools=True, args=['--disable-infobars'])
   page = await browser.newPage()
+  await page.bringToFront()
+  
   await page.evaluateOnNewDocument('Object.defineProperty(navigator, "webdriver", {get: () => undefined})')
   # 打开网页
   await page.goto('http://exam.sdschoolsafe.cn:7007/')
