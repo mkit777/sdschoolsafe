@@ -9,6 +9,7 @@ class Opts:
   def __init__(self) -> None:
     self.username = None
     self.password = None
+    self.school = None
 
 OPT_MAP = {
   'A': 1,
@@ -38,35 +39,47 @@ async def main(opts: Opts):
   browser = await launch(devtools=True, args=['--disable-infobars'])
   page = await browser.newPage()
   await page.bringToFront()
-  
+  await asyncio.sleep(1)
   await page.evaluateOnNewDocument('Object.defineProperty(navigator, "webdriver", {get: () => undefined})')
   # 打开网页
   await page.goto('http://exam.sdschoolsafe.cn:7007/')
   page.waitForSelector('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view.input-content.margin-bottom-1.margin-top-24-px > div > div > input')
-  
+  await asyncio.sleep(1)
   # 选择学校
-  await page.click('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view.input-content.margin-bottom-1.margin-top-24-px > div > div > input')
-  sleep(1)
-  await page.click('body > div.el-select-dropdown.el-popper > div.el-scrollbar > div.el-select-dropdown__wrap.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default > ul > li:nth-child(88)')
-  sleep(1)
+  await page.click('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view.input-content.margin-bottom-1.margin-top-24-px > div > div > input')  
+  await asyncio.sleep(1)
+  ele = await page.evaluateHandle(
+    ''.join(("""()=>{
+      for(let ele of document.querySelectorAll('.el-scrollbar__view li')){
+          if (ele.textContent == """, f'"{opts.school}"',"""){
+            console.log(ele.textContent)
+            return ele;
+          }
+      }
+    }
+    """))
+  )
+
+  await ele.click()
+  await asyncio.sleep(1)
   # 输入账号
   await page.type('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(1) > uni-input > div > input', opts.username)
-  sleep(1)
+  await asyncio.sleep(1)
   # 输入密码
   await page.type('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(2) > input[type="password"]',  opts.password)
-  sleep(1)
+  await asyncio.sleep(1)
   # 确认
   await page.click("body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-button")
   page.waitForSelector("body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view:nth-child(5) > uni-view > uni-view")
-  sleep(3)
+  await asyncio.sleep(1)
   # 点击开始
   await page.click('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view:nth-child(5) > uni-view > uni-view')
   page.waitForSelector('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view:nth-child(5) > uni-view > uni-view')
-  sleep(1)
+  await asyncio.sleep(1)
   # 确定
   await page.click('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view.uni-popup.center > uni-view:nth-child(2) > uni-view > uni-view > uni-view.paper-foot.margin-top-1.display-flex.flex-justify-content-space-between > uni-button:nth-child(2)')
   page.waitForSelector('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view.uni-popup.center > uni-view:nth-child(2) > uni-view > uni-view > uni-view.paper-foot.margin-top-1.display-flex.flex-justify-content-space-between > uni-button:nth-child(2)')
-  sleep(1)
+  await asyncio.sleep(1)
   # 获取内容
   content = await page.content()
 
@@ -80,7 +93,7 @@ async def main(opts: Opts):
       await multi_select(page, q.block, q.block_no, [item[0] for item in an])
     elif q.type == '判断题':
       await judge_select(page, q.block, q.block_no, an[0][0])
-    sleep(1)
+    await asyncio.sleep(1)
   input('enter any key.')
   await browser.close()
 
@@ -88,6 +101,7 @@ async def main(opts: Opts):
 opts = Opts()
 opts.username = ''
 opts.password = ''
+opts.school = ''
 
 
 asyncio.get_event_loop().run_until_complete(main(opts))
