@@ -17,9 +17,22 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple beautifulsoup4
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple thefuzz
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple python-Levenshtein
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple openpyxl
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pyppeteer
 ```
+## 2. 自动答题
 
-## 2 获取试题
+1. 打开 auto.py,修改 
+   
+   * `opt.username`：身份证
+   * `opt.password`：密码
+   * `opt.school` ：学校名
+
+2. 执行`python auto.py`
+
+
+## 3. 手动答题
+
+### 1 获取试题
 
 1. 在浏览器（chrome）中登录系统
    http://exam.sdschoolsafe.cn:7007/#/
@@ -42,7 +55,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple openpyxl
 
 ![avatar](./image/Snipaste_2022-03-09_14-35-11.png)
 
-## 3 计算答案
+### 2 计算答案
 
 控制台中执行如下命令
 
