@@ -1,8 +1,5 @@
 import asyncio
-from calendar import c
-from cv2 import scaleAdd
 from playwright.async_api import async_playwright
-from pyrsistent import b
 from extract import do_extract_questions
 from main import load_db, find_answer
 import ddddocr
