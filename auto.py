@@ -1,10 +1,12 @@
 import asyncio
 from calendar import c
+from cv2 import scaleAdd
 from playwright.async_api import async_playwright
 from pyrsistent import b
 from extract import do_extract_questions
 from main import load_db, find_answer
 import ddddocr
+import sys
 
 
 ocr = ddddocr.DdddOcr(show_ad=False)
@@ -18,13 +20,6 @@ class Opts:
     self.school = None
 
 OPT = Opts()
-
-# 修改用户名
-OPT.username = ''
-# 修改密码
-OPT.password = ''
-# 修改学校
-OPT.school = ''
 
 OPT_MAP = {
   'A': 1,
@@ -46,7 +41,7 @@ async def select_school(page, school):
   await school_input.click()
   school_options = page.locator('body > div.el-select-dropdown.el-popper > div.el-scrollbar > div.el-select-dropdown__wrap.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default > ul > li')
   for opt_hd in await school_options.element_handles():
-    if (await opt_hd.inner_text()).strip() == '山东科技大学':
+    if (await opt_hd.inner_text()).strip() == school:
         await opt_hd.click()
         break
 
@@ -142,6 +137,27 @@ async def start_paper(page):
 
     await page.wait_for_timeout(200)
 
+
+def init_args():
+  if len(sys.argv) != 4:
+    print('Please modify your command.')
+    print('usage:')
+    print('\tpython auto.py <username> <password> <school>')
+    print('example:')
+    print('\tpython auto.py zhangsan 123 辛安带专')
+    return False
+
+  name = sys.argv[1]
+  pwd = sys.argv[2]
+  school = sys.argv[3]
+
+  OPT.username = name
+  OPT.password = pwd
+  OPT.school = school
+
+  return True
+
+
 async def main():
   async with async_playwright() as p:
     browser = await p.chromium.launch(headless=False, slow_mo=100)
@@ -149,11 +165,8 @@ async def main():
 
     await page.goto(OPT.url)
     await select_school(page, OPT.school)
-    # await page.wait_for_timeout(1000)
     await input_username(page, OPT.username)
-    # await page.wait_for_timeout(1000)
     await input_password(page, OPT.password)
-    # await page.wait_for_timeout(1000)
     await input_vrcode(page)
 
     success = await login(page)
@@ -164,6 +177,11 @@ async def main():
       await start_paper(page)
       await submit_paper(page)
       await save_result(page)
+      
     await browser.close()
 
-asyncio.run(main())
+
+
+if __name__ == '__main__':
+  if init_args():
+    asyncio.run(main())

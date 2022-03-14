@@ -23,13 +23,17 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple ddddocr
 
 ## 2. 自动答题
 
-1. 打开 auto.py,修改
+命令格式
 
-   - `OPT.username`：身份证
-   - `OPT.password`：密码
-   - `OPT.school` ：学校名
+```bash
+python auto.py <username> <password> <school>
+```
 
-2. 执行`python auto.py`
+示例
+
+```bash
+python auto.py zhangsan 11111 辛安带专
+```
 
 ## 3. 手动答题
 
