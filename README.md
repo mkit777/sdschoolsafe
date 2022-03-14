@@ -17,18 +17,19 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple beautifulsoup4
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple thefuzz
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple python-Levenshtein
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple openpyxl
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pyppeteer
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple playwright
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple ddddocr
 ```
+
 ## 2. 自动答题
 
-1. 打开 auto.py,修改 
-   
-   * `opt.username`：身份证
-   * `opt.password`：密码
-   * `opt.school` ：学校名
+1. 打开 auto.py,修改
+
+   - `OPT.username`：身份证
+   - `OPT.password`：密码
+   - `OPT.school` ：学校名
 
 2. 执行`python auto.py`
-
 
 ## 3. 手动答题
 
