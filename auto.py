@@ -1,4 +1,5 @@
 import asyncio
+from cv2 import log
 from playwright.async_api import async_playwright
 from extract import do_extract_questions
 from main import load_db, find_answer
@@ -7,6 +8,7 @@ import sys
 import random
 
 ocr = ddddocr.DdddOcr(show_ad=False)
+
 
 class Opts:
   def __init__(self) -> None:
@@ -18,12 +20,14 @@ class Opts:
 
 OPT = Opts()
 
+
 OPT_MAP = {
   'A': 1,
   'B': 2,
   'C': 3,
   'D': 4,
 }
+
 
 async def init_page(browser):
   page = await browser.new_page()
@@ -32,6 +36,7 @@ async def init_page(browser):
   """
   await page.add_init_script(js)
   return page
+
 
 async def select_school(page, school):
   school_input = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view.input-content.margin-bottom-1.margin-top-24-px > div > div > input')
@@ -42,6 +47,7 @@ async def select_school(page, school):
         await opt_hd.click(delay=random.randrange(100, 300))
         break
 
+
 async def input_username(page, username):
   id_input = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(1) > uni-input > div > input')
   await id_input.fill(username)
@@ -51,9 +57,12 @@ async def input_password(page, password):
   pwd_input = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(2) > input[type=password]')
   await pwd_input.fill(password)
 
+
 async def refresh_vrcode(page):
   vrc_img = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(3) > uni-image > img')
-  await vrc_img.click(delay=random.randrange(100, 300))
+  async with page.expect_response('**/api/kaptcha/refresh**'):
+    await vrc_img.click(delay=random.randrange(100, 300))
+
 
 async def input_vrcode(page):
   vrc_img = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(3) > uni-image > img')
@@ -63,24 +72,25 @@ async def input_vrcode(page):
   res = ocr.classification(vrc_img)
   print(f'vrcode: {res}')
   vrc_input = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-view:nth-child(2) > uni-view:nth-child(3) > uni-view > uni-input > div > input')
-  # await vrc_input.fill(res)
   await vrc_input.fill(res)
 
 
 async def login(page):
   confirm_btn = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view > uni-view.wrapper > uni-button')
-  await confirm_btn.click(delay=random.randrange(100, 300))
-  resp = await page.wait_for_event('response')
-  ret = await resp.json()
-  print(f'loing result: {ret}')
+
+  async with page.expect_response('**/api/user/login') as resp:
+    await confirm_btn.click(delay=random.randrange(100, 300))
+  ret = await (await resp.value).json()
   if ret['code'] == 1:
     return True
+  print(f'loing result: {ret}')
   return False
   
 
 async def start_exam(page):
   start_btn = page.locator('.kaishi-yuan-class')
   await start_btn.click(delay=random.randrange(100, 300))
+
 
 async def conform_start(page):
   confirm_btn = page.locator('body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view.uni-popup.center > uni-view:nth-child(2) > uni-view > uni-view > uni-view.paper-foot.margin-top-1.display-flex.flex-justify-content-space-between > uni-button:nth-child(2)')
@@ -96,6 +106,7 @@ async def multi_select(page, b, no_in_b, opts):
  for opt in opts:
     locator = page.locator(f'body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view.paper-content > .title-contain:nth-child({b + 1}) > .question-contain:nth-child({no_in_b + 2}) > .multiple-choice uni-label:nth-child({OPT_MAP[opt]})')
     await locator.click(delay=random.randrange(100, 300))
+
 
 async def judge_select(page, b, no_in_b, opt):
   locator = page.locator(f'body > uni-app > uni-page > uni-page-wrapper > uni-page-body > uni-view > uni-view.paper-content > .title-contain:nth-child({b + 1}) > .question-contain:nth-child({no_in_b + 2}) > .true-false-choice uni-label:nth-child({OPT_MAP[opt]})')
@@ -125,6 +136,7 @@ async def start_paper(page):
   db = load_db(OPT.db)
 
   for q in questions:
+    print(f'正在答题 {q.no}')
     an = find_answer(db, q)
     if q.type == '单选题':
       await single_select(page, q.block, q.block_no, an[0][0])
@@ -167,20 +179,31 @@ async def main():
     await input_password(page, OPT.password)
     await input_vrcode(page)
     await page.wait_for_timeout(random.randrange(500, 1000))
+
     success = await login(page)
+    count = 0
+    while not success:
+      await refresh_vrcode(page)
+      await input_vrcode(page)
+      success = await login(page)
+      count += 1
+      if count > 10:
+        print('登录重试超过最大次数')      
       
     if success:
+      print('登录成功')
       await start_exam(page)
       await page.wait_for_timeout(random.randrange(500, 1000))
       await conform_start(page)
       await page.wait_for_timeout(random.randrange(500, 1000))
+      print('开始答题')
       await start_paper(page)
       await submit_paper(page)
       await page.wait_for_timeout(random.randrange(500, 1000))
       await save_result(page)
-      
+    else:
+      print('登录失败')
     await browser.close()
-
 
 
 if __name__ == '__main__':
