@@ -2,7 +2,7 @@ import asyncio
 from cv2 import log
 from playwright.async_api import async_playwright
 from extract import do_extract_questions
-from main import load_db, find_answer
+from db import load_db, find_answer
 import ddddocr
 import sys
 import random
@@ -180,10 +180,10 @@ async def main():
     await input_vrcode(page)
     await page.wait_for_timeout(random.randrange(500, 1000))
 
-    (sucess, code, message) = await login(page)
+    (success, code, message) = await login(page)
     
     count = 0
-    while not sucess:
+    while not success:
       count += 1
       if count > 10:
         print(f'登录失败 超过最大次数')   
@@ -194,7 +194,7 @@ async def main():
 
       await refresh_vrcode(page)
       await input_vrcode(page)
-      (sucess, code, message) = await login(page)
+      (success, code, message) = await login(page)
       
     if success:
       print('登录成功')
