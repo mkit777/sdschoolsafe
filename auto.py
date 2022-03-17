@@ -1,5 +1,4 @@
 import asyncio
-from cv2 import log
 from playwright.async_api import async_playwright
 from extract import do_extract_questions
 from db import load_db, find_answer
@@ -168,7 +167,6 @@ def init_args():
 
 
 async def main():
-  score = -1
   async with async_playwright() as p:
     browser = await p.chromium.launch()
     page = await init_page(browser)
@@ -186,7 +184,8 @@ async def main():
     while not success:
       count += 1
       if count > 10:
-        print(f'登录失败 超过最大次数')   
+        print(f'登录失败 超过最大次数')
+        break
 
       if code != 2:
         print(f'登录失败 {message}')
@@ -206,12 +205,15 @@ async def main():
       await start_paper(page)
       await submit_paper(page)
       await page.wait_for_timeout(random.randrange(500, 1000))
-      score = await save_result(page)
+      message = await save_result(page)
+      success = True
+      code = 0
       print('答题结束')
     await browser.close()
-  return score
+  return (success, code, message)
 
 
 if __name__ == '__main__':
   if init_args():
-    asyncio.run(main())
+    ret = asyncio.run(main())
+    print(ret)
