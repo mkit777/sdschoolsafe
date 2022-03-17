@@ -82,10 +82,8 @@ async def login(page):
     await confirm_btn.click(delay=random.randrange(100, 300))
   ret = await (await resp.value).json()
   if ret['code'] == 1:
-    return True
-  print(f'loing result: {ret}')
-  return False
-  
+    return (True, ret['code'], ret['message'])
+  return (False, ret['code'], ret['message'])
 
 async def start_exam(page):
   start_btn = page.locator('.kaishi-yuan-class')
@@ -121,6 +119,7 @@ async def save_result(page):
   hd = await qr_code.element_handle()
   await hd.wait_for_element_state('stable')
   await page.screenshot(path='result.png', type='png')
+  return score
 
 
 async def submit_paper(page):
@@ -169,8 +168,9 @@ def init_args():
 
 
 async def main():
+  score = -1
   async with async_playwright() as p:
-    browser = await p.chromium.launch(headless=False)
+    browser = await p.chromium.launch()
     page = await init_page(browser)
 
     await page.goto(OPT.url)
@@ -180,15 +180,21 @@ async def main():
     await input_vrcode(page)
     await page.wait_for_timeout(random.randrange(500, 1000))
 
-    success = await login(page)
+    (sucess, code, message) = await login(page)
+    
     count = 0
-    while not success:
-      await refresh_vrcode(page)
-      await input_vrcode(page)
-      success = await login(page)
+    while not sucess:
       count += 1
       if count > 10:
-        print('登录重试超过最大次数')      
+        print(f'登录失败 超过最大次数')   
+
+      if code != 2:
+        print(f'登录失败 {message}')
+        break
+
+      await refresh_vrcode(page)
+      await input_vrcode(page)
+      (sucess, code, message) = await login(page)
       
     if success:
       print('登录成功')
@@ -200,10 +206,10 @@ async def main():
       await start_paper(page)
       await submit_paper(page)
       await page.wait_for_timeout(random.randrange(500, 1000))
-      await save_result(page)
-    else:
-      print('登录失败')
+      score = await save_result(page)
+      print('答题结束')
     await browser.close()
+  return score
 
 
 if __name__ == '__main__':
